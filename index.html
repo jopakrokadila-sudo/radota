@@ -1,50 +1,105 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRM Admin App</title>
+    <title>CRM Elite Panel</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; background: #1c1c1c; color: white; text-align: center; margin: 0; padding: 20px; }
-        .card { background: #2d2d2d; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .btn { background: #0088cc; color: white; border: none; padding: 15px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; margin: 10px 0; }
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        h1 { color: #0088cc; }
+        :root { 
+            --bg-color: #0f1012; 
+            --card-bg: #1e2126; 
+            --accent: #0088cc; 
+            --danger: #ff4d4d; 
+            --success: #00c853; 
+            --text: #ffffff; 
+            --secondary-text: #a0a0a0; 
+        }
+        body { 
+            font-family: sans-serif; 
+            background: var(--bg-color); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            min-height: 100vh; 
+        }
+        .header { text-align: center; margin-bottom: 25px; }
+        .header h2 { margin: 0; color: var(--accent); text-transform: uppercase; font-size: 20px; }
+        .section-title { font-size: 14px; color: var(--secondary-text); text-transform: uppercase; margin-bottom: 15px; font-weight: bold; }
+        #order-list { flex-grow: 1; margin-bottom: 30px; }
+        .order-card { 
+            background: var(--card-bg); 
+            border-radius: 18px; 
+            padding: 18px; 
+            margin-bottom: 15px; 
+            border: 1px solid #333; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4); 
+        }
+        .order-id { font-size: 18px; font-weight: 800; margin-bottom: 8px; color: var(--accent); }
+        .order-desc { font-size: 15px; line-height: 1.4; color: #e0e0e0; margin-bottom: 15px; }
+        .btn-send { 
+            background: linear-gradient(135deg, #0088cc, #005580); 
+            color: white; 
+            border: none; 
+            padding: 12px; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            width: 100%; 
+            cursor: pointer; 
+            text-transform: uppercase; 
+            font-size: 12px; 
+        }
+        .stats-container { 
+            background: var(--card-bg); 
+            border-radius: 20px; 
+            padding: 25px; 
+            border: 1px solid #444; 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 20px; 
+        }
+        .stat-item { text-align: center; }
+        .stat-value { font-size: 32px; font-weight: 900; display: block; margin-bottom: 5px; }
+        .stat-label { font-size: 12px; color: var(--secondary-text); text-transform: uppercase; }
+        .stat-requests .stat-value { color: var(--success); }
+        .stat-fires .stat-value { color: var(--danger); }
     </style>
 </head>
 <body>
-    <h1>CRM Admin Panel</h1>
+    <div class="header"><h2>Rabotka Management</h2></div>
     
-    <div class="card">
-        <h3>📊 Статистика</h3>
-        <div class="stat-grid">
-            <div>Заявки: <span id="req">0</span></div>
-            <div>Пожары: <span id="fire">0</span></div>
+    <div class="section-title">📥 Текущие заявки</div>
+    <div id="order-list">
+        <!-- Пример карточки -->
+        <div class="order-card">
+            <div class="order-id">ЗАЯВКА #85421</div>
+            <div class="order-desc">Норильск, ул. Мира 12. Ремонт стиральной машины (замена подшипника). Срочно!</div>
+            <button class="btn-send" onclick="shareOrder('85421', 'Норильск, ул. Мира 12. Стиралка.')">🚀 Переслать мастеру</button>
         </div>
     </div>
 
-    <div class="card">
-        <h3>🎰 Казино</h3>
-        <div id="slots" style="font-size: 40px; margin: 10px;">❓ | ❓ | ❓</div>
-        <button class="btn" onclick="spin()">КРУТИТЬ</button>
+    <div class="section-title">📊 Итоги смены</div>
+    <div class="stats-container">
+        <div class="stat-item stat-requests">
+            <span class="stat-value" id="total-req">42</span>
+            <span class="stat-label">Заявки</span>
+        </div>
+        <div class="stat-item stat-fires">
+            <span class="stat-value" id="total-fires">3</span>
+            <span class="stat-label">Опоздания</span>
+        </div>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
-        tg.expand(); // Развернуть на весь экран
-
-        function spin() {
-            const icons = ["💎", "🎰", "🍒", "🔥", "⭐️"];
-            const r1 = icons[Math.floor(Math.random()*icons.length)];
-            const r2 = icons[Math.floor(Math.random()*icons.length)];
-            const r3 = icons[Math.floor(Math.random()*icons.length)];
-            document.getElementById('slots').innerText = `${r1} | ${r2} | ${r3}`;
-            
-            if(r1 === r2 && r2 === r3) {
-                tg.HapticFeedback.notificationOccurred('success');
-                alert("JACKPOT!");
-            }
+        tg.expand(); // Раскрыть на весь экран
+        
+        function shareOrder(id, text) {
+            tg.HapticFeedback.impactOccurred('medium'); // Вибрация при нажатии
+            // Открыть выбор чата для пересылки текста
+            tg.switchInlineQuery(`🛠 ЗАКАЗ #${id}\n\n${text}`);
         }
     </script>
 </body>
