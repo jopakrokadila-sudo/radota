@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Admin App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #1c1c1c; color: white; text-align: center; margin: 0; padding: 20px; }
+        .card { background: #2d2d2d; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .btn { background: #0088cc; color: white; border: none; padding: 15px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; margin: 10px 0; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        h1 { color: #0088cc; }
+    </style>
+</head>
+<body>
+    <h1>CRM Admin Panel</h1>
+    
+    <div class="card">
+        <h3>📊 Статистика</h3>
+        <div class="stat-grid">
+            <div>Заявки: <span id="req">0</span></div>
+            <div>Пожары: <span id="fire">0</span></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>🎰 Казино</h3>
+        <div id="slots" style="font-size: 40px; margin: 10px;">❓ | ❓ | ❓</div>
+        <button class="btn" onclick="spin()">КРУТИТЬ</button>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand(); // Развернуть на весь экран
+
+        function spin() {
+            const icons = ["💎", "🎰", "🍒", "🔥", "⭐️"];
+            const r1 = icons[Math.floor(Math.random()*icons.length)];
+            const r2 = icons[Math.floor(Math.random()*icons.length)];
+            const r3 = icons[Math.floor(Math.random()*icons.length)];
+            document.getElementById('slots').innerText = `${r1} | ${r2} | ${r3}`;
+            
+            if(r1 === r2 && r2 === r3) {
+                tg.HapticFeedback.notificationOccurred('success');
+                alert("JACKPOT!");
+            }
+        }
+    </script>
+</body>
+</html>
