@@ -63,3 +63,91 @@
         // Это откроет выбор чата и подставит туда готовый текст заявки
     };
 </script>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rabotka Panel PRO</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --bg: #0f1012; --card: #1e2126; --accent: #0088cc; --text: #ffffff; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
+        .section-title { font-size: 14px; color: #888; margin: 15px 0 10px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* Список заявок */
+        .lead-card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 10px; border-left: 4px solid var(--accent); }
+        .lead-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .lead-id { font-weight: bold; color: var(--accent); }
+        .lead-body { font-size: 13px; line-height: 1.4; color: #ccc; }
+        .send-btn { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 8px 15px; margin-top: 10px; width: 100%; cursor: pointer; font-weight: bold; }
+
+        /* Статистика */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .stat-item { background: var(--card); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #333; }
+        .stat-val { font-size: 20px; font-weight: bold; color: var(--accent); display: block; }
+        .stat-lab { font-size: 10px; color: #666; }
+    </style>
+</head>
+<body>
+    <h3 style="text-align: center;">Rabotka Control</h3>
+
+    <div class="section-title">Список заявок</div>
+    <div id="leads-container">Загрузка заявок...</div>
+
+    <div class="section-title">Статистика</div>
+    <div class="stats-grid" id="stats-container">
+        <div class="stat-item"><span class="stat-val" id="st-total">0</span><span class="stat-lab">ВСЕГО</span></div>
+        <div class="stat-item"><span class="stat-val" id="st-fires" style="color:#ff4d4d;">0</span><span class="stat-lab">ОПОЗДАНИЯ</span></div>
+    </div>
+
+    <div style="text-align: center; padding: 20px; font-size: 10px; color: #444;">
+        Обновлено: <span id="update-time">--:--</span>
+    </div>
+
+    <script>
+        const bridgeKey = 'rabotka_data_v1';
+        const tg = window.Telegram.WebApp;
+
+        async function refreshData() {
+            try {
+                const res = await fetch("https://kvdb.io/6P8S5q9S8Q8S9q8S8Q8S9q/" + bridgeKey);
+                const data = await res.json();
+
+                // Отрисовка заявок
+                const container = document.getElementById('leads-container');
+                container.innerHTML = '';
+                
+                data.leads.forEach(lead => {
+                    const div = document.createElement('div');
+                    div.className = 'lead-card';
+                    div.innerHTML = `
+                        <div class="lead-header">
+                            <span class="lead-id">№ ${lead.id}</span>
+                            <span style="font-size: 11px; color: #666;">${lead.date}</span>
+                        </div>
+                        <div class="lead-body">${lead.text}</div>
+                        <button class="send-btn" onclick="sendLead('${lead.text}')">✈️ Переслать</button>
+                    `;
+                    container.appendChild(div);
+                });
+
+                // Отрисовка статистики
+                document.getElementById('st-total').innerText = data.stats.total;
+                document.getElementById('st-fires').innerText = data.stats.fires;
+                document.getElementById('update-time').innerText = data.lastUpdate;
+
+            } catch (e) { console.log("Синхронизация..."); }
+        }
+
+        function sendLead(text) {
+            // Открывает выбор чата в ТГ и подставляет шаблон
+            tg.switchInlineQuery(text);
+        }
+
+        tg.ready();
+        setInterval(refreshData, 5000);
+        refreshData();
+    </script>
+</body>
+</html>
