@@ -49,3 +49,17 @@
     </script>
 </body>
 </html>
+<div class="stat-card" style="grid-column: span 2; cursor: pointer; background: var(--accent);" id="forwardBtn">
+    <span class="label" style="color: white;">Переслать последнюю заявку</span>
+</div>
+
+<script>
+    document.getElementById('forwardBtn').onclick = async function() {
+        const res = await fetch("https://kvdb.io/6P8S5q9S8Q8S9q8S8Q8S9q/" + bridgeKey);
+        const data = await res.json();
+        
+        // Используем Telegram WebApp API для пересылки
+        window.Telegram.WebApp.switchInlineQuery(data.lastLead); 
+        // Это откроет выбор чата и подставит туда готовый текст заявки
+    };
+</script>
