@@ -5,49 +5,89 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; padding: 15px; }
-        .card { background: #1c1c1c; border-radius: 10px; padding: 15px; margin-bottom: 10px; border-left: 4px solid #0088cc; }
-        .btn-send { background: #0088cc; color: #fff; border: none; width: 100%; padding: 10px; border-radius: 5px; font-weight: bold; margin-top: 10px; }
+        body { background: #000; color: #fff; font-family: sans-serif; padding: 15px; margin: 0; }
+        .card { background: #1c1c1c; border-radius: 10px; padding: 15px; margin-bottom: 12px; border-left: 4px solid #0088cc; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .id-tag { color: #0088cc; font-weight: bold; font-size: 18px; }
+        .date-tag { color: #666; font-size: 12px; }
+        .status-tag { display: inline-block; padding: 3px 8px; border-radius: 5px; font-size: 10px; text-transform: uppercase; margin-bottom: 8px; }
+        .status-ok { background: #28a745; color: #fff; }
+        .status-fire { background: #dc3545; color: #fff; }
+        .address-text { font-size: 14px; margin: 5px 0; color: #ccc; }
+        .client-info { font-size: 13px; color: #888; font-style: italic; }
+        .btn-send { background: #0088cc; color: #fff; border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; margin-top: 10px; cursor: pointer; }
         .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; border-top: 1px solid #333; padding-top: 20px; }
         .stat-item { background: #1c1c1c; padding: 15px; border-radius: 10px; text-align: center; }
         .val { display: block; font-size: 24px; font-weight: bold; color: #0088cc; }
-        .label { font-size: 10px; color: #666; }
+        .label { font-size: 10px; color: #666; letter-spacing: 1px; }
     </style>
 </head>
 <body>
-    <h2 style="text-align:center">Заявки CRM</h2>
-    <div id="leads-container">Загрузка...</div>
+    <h2 style="text-align:center">Заявки Rabotka</h2>
+    <div id="leads-container">Загрузка данных из CRM...</div>
 
     <h2 style="text-align:center; margin-top:30px">Статистика</h2>
     <div class="stats">
-        <div class="stat-item"><span class="val" id="total">0</span><span class="label">ВСЕГО</span></div>
+        <div class="stat-item"><span class="val" id="total">0</span><span class="label">В ТАБЛИЦЕ</span></div>
         <div class="stat-item"><span class="val" id="fires" style="color:red">0</span><span class="label">ОПОЗДАНИЯ</span></div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
+        const KVDB_URL = "https://kvdb.io/6P8S5q9S8Q8S9q8S8Q8S9q/rabotka_data_v1";
+
         async function load() {
             try {
-                const r = await fetch("https://kvdb.io/6P8S5q9S8Q8S9q8S8Q8S9q/rabotka_data_v1");
-                const d = await r.json();
+                const response = await fetch(KVDB_URL);
+                if (!response.ok) throw new Error('Ошибка сети');
+                const data = await response.json();
                 
-                const cont = document.getElementById('leads-container');
-                cont.innerHTML = '';
-                d.leads.forEach(l => {
-                    const div = document.createElement('div');
-                    div.className = 'card';
-                    div.innerHTML = `<b>№${l.id}</b> <small style="float:right">${l.date}</small><br><p style="font-size:13px">${l.text}</p>
-                                     <button class="btn-send" onclick="send('${l.text}')">✈️ ПЕРЕСЛАТЬ</button>`;
-                    cont.appendChild(div);
+                const container = document.getElementById('leads-container');
+                container.innerHTML = '';
+
+                // Если заявок нет
+                if (!data.leads || data.leads.length === 0) {
+                    container.innerHTML = '<p style="text-align:center; color:#666">Заявок пока нет</p>';
+                    return;
+                }
+
+                // Отрисовка каждой заявки
+                data.leads.forEach(lead => {
+                    const isFire = lead.status.toLowerCase().includes('просрочено');
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    
+                    // Шаблон карточки
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <span class="id-tag">№${lead.id}</span>
+                            <span class="date-tag">${lead.date}</span>
+                        </div>
+                        <div class="status-tag ${isFire ? 'status-fire' : 'status-ok'}">${lead.status}</div>
+                        <div class="address-text">📍 ${lead.address}</div>
+                        <div class="client-info">👤 Клиент: ${lead.client} | Мастер: ${lead.master}</div>
+                        <button class="btn-send" onclick="sendToChat('${lead.id}', '${lead.address}')">✈️ В ЧАТ</button>
+                    `;
+                    container.appendChild(card);
                 });
 
-                document.getElementById('total').innerText = d.stats.total;
-                document.getElementById('fires').innerText = d.stats.fires;
-            } catch(e) {}
+                // Обновление статистики
+                document.getElementById('total').innerText = data.stats.total || 0;
+                document.getElementById('fires').innerText = data.stats.fires || 0;
+                
+            } catch(error) {
+                console.error("Ошибка загрузки:", error);
+            }
         }
-        function send(t) { tg.switchInlineQuery(t); }
+
+        function sendToChat(id, address) {
+            const message = `Заявка №${id}\nАдрес: ${address}`;
+            tg.sendData(message); // Отправляет данные обратно боту
+        }
+
         tg.ready();
-        setInterval(load, 5000);
+        tg.expand(); // Разворачивает приложение на весь экран
+        setInterval(load, 7000); // Проверка обновлений каждые 7 секунд
         load();
     </script>
 </body>
