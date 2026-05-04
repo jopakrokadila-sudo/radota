@@ -1,92 +1,54 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rabotka Management</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --bg: #0b0e11; --card: #171a1f; --accent: #0088cc; --text: #ffffff; --danger: #ff4d4d; }
-        body { font-family: -apple-system, blinkmacsystemfont, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
-        
-        /* Заявки */
-        .lead-card { background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #2d333b; }
-        .lead-id { font-weight: bold; color: var(--accent); font-size: 16px; }
-        .lead-info { font-size: 13px; color: #9ea7b3; margin: 8px 0; line-height: 1.5; }
-        .btn-send { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 10px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 5px; }
-        
-        /* Статистика */
-        .stats-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .stat-card { background: var(--card); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #2d333b; }
-        .stat-val { font-size: 24px; font-weight: bold; color: var(--accent); display: block; }
-        .stat-label { font-size: 10px; color: #666; text-transform: uppercase; margin-top: 4px; }
-        
-        .header { text-align: center; margin-bottom: 20px; font-size: 18px; font-weight: bold; }
-        .section-title { font-size: 12px; color: #555; margin: 20px 0 10px; text-transform: uppercase; }
+        body { background: #000; color: #fff; font-family: sans-serif; padding: 15px; }
+        .card { background: #1c1c1c; border-radius: 10px; padding: 15px; margin-bottom: 10px; border-left: 4px solid #0088cc; }
+        .btn-send { background: #0088cc; color: #fff; border: none; width: 100%; padding: 10px; border-radius: 5px; font-weight: bold; margin-top: 10px; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; border-top: 1px solid #333; padding-top: 20px; }
+        .stat-item { background: #1c1c1c; padding: 15px; border-radius: 10px; text-align: center; }
+        .val { display: block; font-size: 24px; font-weight: bold; color: #0088cc; }
+        .label { font-size: 10px; color: #666; }
     </style>
 </head>
 <body>
-    <div class="header">Rabotka Management</div>
+    <h2 style="text-align:center">Заявки CRM</h2>
+    <div id="leads-container">Загрузка...</div>
 
-    <div class="section-title">Список заявок</div>
-    <div id="leads-list">Загрузка данных из CRM...</div>
-
-    <div class="section-title">Вся статистика</div>
-    <div class="stats-box">
-        <div class="stat-card"><span class="stat-val" id="total">0</span><span class="stat-label">Заявки в работе</span></div>
-        <div class="stat-card"><span class="stat-val" id="fires" style="color:var(--danger)">0</span><span class="stat-label">Опоздания</span></div>
-        <div class="stat-card" style="grid-column: span 2;">
-            <span class="stat-val" id="closed" style="color:#28a745">0</span>
-            <span class="stat-label">Закрыто заявок за сегодня</span>
-        </div>
-    </div>
-
-    <div style="text-align:center; font-size:10px; color:#333; margin-top:20px;">
-        Последнее обновление: <span id="time">--:--:--</span>
+    <h2 style="text-align:center; margin-top:30px">Статистика</h2>
+    <div class="stats">
+        <div class="stat-item"><span class="val" id="total">0</span><span class="label">ВСЕГО</span></div>
+        <div class="stat-item"><span class="val" id="fires" style="color:red">0</span><span class="label">ОПОЗДАНИЯ</span></div>
     </div>
 
     <script>
-        const bridgeKey = 'rabotka_data_v1';
         const tg = window.Telegram.WebApp;
-
-        async function update() {
+        async function load() {
             try {
-                const r = await fetch("https://kvdb.io/6P8S5q9S8Q8S9q8S8Q8S9q/" + bridgeKey);
-                const data = await r.json();
-
-                const list = document.getElementById('leads-list');
-                list.innerHTML = '';
-
-                data.leads.forEach(l => {
-                    const card = document.createElement('div');
-                    card.className = 'lead-card';
-                    card.innerHTML = `
-                        <div style="display:flex; justify-content:space-between">
-                            <span class="lead-id">№${l.id}</span>
-                            <span style="font-size:11px; color:#555">${l.date}</span>
-                        </div>
-                        <div class="lead-info">${l.text}</div>
-                        <button class="btn-send" onclick="sendToTG('${l.text}')">✈️ ПЕРЕСЛАТЬ</button>
-                    `;
-                    list.appendChild(card);
+                const r = await fetch("https://kvdb.io/6P8S5q9S8Q8S9q8S8Q8S9q/rabotka_data_v1");
+                const d = await r.json();
+                
+                const cont = document.getElementById('leads-container');
+                cont.innerHTML = '';
+                d.leads.forEach(l => {
+                    const div = document.createElement('div');
+                    div.className = 'card';
+                    div.innerHTML = `<b>№${l.id}</b> <small style="float:right">${l.date}</small><br><p style="font-size:13px">${l.text}</p>
+                                     <button class="btn-send" onclick="send('${l.text}')">✈️ ПЕРЕСЛАТЬ</button>`;
+                    cont.appendChild(div);
                 });
 
-                document.getElementById('total').innerText = data.stats.total;
-                document.getElementById('fires').innerText = data.stats.fires;
-                document.getElementById('closed').innerText = data.stats.closed;
-                document.getElementById('time').innerText = data.stats.lastUpdate;
-
-            } catch(e) { console.log("Связь устанавливается..."); }
+                document.getElementById('total').innerText = d.stats.total;
+                document.getElementById('fires').innerText = d.stats.fires;
+            } catch(e) {}
         }
-
-        function sendToTG(text) {
-            tg.switchInlineQuery(text);
-        }
-
+        function send(t) { tg.switchInlineQuery(t); }
         tg.ready();
-        tg.expand();
-        setInterval(update, 5000);
-        update();
+        setInterval(load, 5000);
+        load();
     </script>
 </body>
 </html>
